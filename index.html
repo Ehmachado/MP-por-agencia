@@ -827,13 +827,352 @@
             }
 
             exportGeralPanel(mobilizadorName, mobilizador) {
-                console.log('Exportando geral:', mobilizadorName);
-                this.showAlert('success', 'Recurso em desenvolvimento!');
+                const canvas = document.getElementById('exportCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                const width = 750;
+                const rowHeight = 38;
+                const headerHeight = 180;
+                const rows = Math.min(mobilizador.data.length, 50);
+                const height = headerHeight + (rows * rowHeight) + 80;
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Background
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Header
+                const gradient = ctx.createLinearGradient(0, 0, 0, 130);
+                gradient.addColorStop(0, '#003366');
+                gradient.addColorStop(1, '#004080');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, 130);
+                
+                ctx.fillStyle = '#FFCC00';
+                ctx.fillRect(0, 130, width, 6);
+                
+                // Title
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 38px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(mobilizadorName.toUpperCase(), width / 2, 55);
+                
+                // Subtitle
+                ctx.font = '20px Segoe UI';
+                ctx.fillStyle = '#FFCC00';
+                ctx.fillText('RANKING GERAL - AGÊNCIAS', width / 2, 85);
+                
+                // Date
+                ctx.font = '14px Segoe UI';
+                ctx.fillStyle = '#FFFFFF';
+                const date = new Date().toLocaleDateString('pt-BR');
+                ctx.fillText(`${date} • ${mobilizador.data.length} agências`, width / 2, 110);
+                
+                // Table header
+                const tableY = 150;
+                ctx.fillStyle = '#F5F5F5';
+                ctx.fillRect(15, tableY, width - 30, 32);
+                
+                ctx.strokeStyle = '#003366';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(15, tableY, width - 30, 32);
+                
+                ctx.fillStyle = '#003366';
+                ctx.font = 'bold 14px Segoe UI';
+                ctx.textAlign = 'left';
+                ctx.fillText('PREFIXO', 25, tableY + 21);
+                ctx.fillText('AGÊNCIA', 100, tableY + 21);
+                ctx.fillText('REDE', 340, tableY + 21);
+                
+                if (mobilizadorName === 'Icred 15/90') {
+                    ctx.textAlign = 'right';
+                    ctx.fillText('% ATING', width - 25, tableY + 21);
+                } else {
+                    ctx.textAlign = 'right';
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.fillText('ATING', 450, tableY + 21);
+                    ctx.fillText('NEC', 530, tableY + 21);
+                    ctx.fillText('RLZ', 605, tableY + 21);
+                    ctx.fillText('%DIA', width - 25, tableY + 21);
+                }
+                
+                // Table rows
+                let currentY = tableY + 32;
+                
+                mobilizador.data.slice(0, 50).forEach((item, index) => {
+                    if (index % 2 === 0) {
+                        ctx.fillStyle = '#FAFAFA';
+                        ctx.fillRect(15, currentY, width - 30, rowHeight);
+                    }
+                    
+                    ctx.strokeStyle = '#E0E0E0';
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(15, currentY + rowHeight);
+                    ctx.lineTo(width - 15, currentY + rowHeight);
+                    ctx.stroke();
+                    
+                    ctx.font = 'bold 13px Segoe UI';
+                    ctx.fillStyle = '#003366';
+                    ctx.textAlign = 'left';
+                    
+                    ctx.fillText(item.prefixo, 25, currentY + 25);
+                    
+                    ctx.font = '12px Segoe UI';
+                    ctx.fillStyle = '#444444';
+                    const truncatedAg = this.truncateText(ctx, item.agencia, 230);
+                    ctx.fillText(truncatedAg, 100, currentY + 25);
+                    
+                    ctx.font = 'bold 12px Segoe UI';
+                    ctx.fillStyle = '#003366';
+                    ctx.fillText(item.rede, 340, currentY + 25);
+                    
+                    ctx.textAlign = 'right';
+                    
+                    if (mobilizadorName === 'Icred 15/90') {
+                        ctx.font = 'bold 14px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.ating, true);
+                        ctx.fillText(this.formatCompact(item.ating, true), width - 25, currentY + 25);
+                    } else {
+                        ctx.font = 'bold 12px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.atingMes, true);
+                        ctx.fillText(this.formatCompact(item.atingMes, true), 450, currentY + 25);
+                        
+                        ctx.font = '11px Segoe UI';
+                        ctx.fillStyle = '#666666';
+                        ctx.fillText(this.formatCompact(item.necDia), 530, currentY + 25);
+                        ctx.fillText(this.formatCompact(item.rlzDia), 605, currentY + 25);
+                        
+                        ctx.font = 'bold 12px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.atingDia, true);
+                        ctx.fillText(this.formatCompact(item.atingDia, true), width - 25, currentY + 25);
+                    }
+                    
+                    currentY += rowHeight;
+                });
+                
+                // Footer
+                const footerGradient = ctx.createLinearGradient(0, height - 50, 0, height);
+                footerGradient.addColorStop(0, '#004080');
+                footerGradient.addColorStop(1, '#003366');
+                ctx.fillStyle = footerGradient;
+                ctx.fillRect(0, height - 50, width, 50);
+                
+                ctx.fillStyle = '#FFCC00';
+                ctx.fillRect(0, height - 50, width, 3);
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('Sistema de Análise de Rankings - Banco do Brasil', width / 2, height - 20);
+                
+                // Download
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
+                    a.download = `ranking_${mobilizadorName.replace(/\s+/g, '_')}_GERAL_${timestamp}.png`;
+                    a.href = url;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    this.showAlert('success', 'Ranking geral exportado com sucesso!');
+                });
             }
 
             exportPorRede(mobilizadorName, mobilizador) {
-                console.log('Exportando por rede:', mobilizadorName);
-                this.showAlert('success', 'Recurso em desenvolvimento!');
+                // Group data by rede
+                const dataByRede = {};
+                mobilizador.data.forEach(item => {
+                    const rede = item.rede || 'OUTRAS';
+                    if (!dataByRede[rede]) {
+                        dataByRede[rede] = [];
+                    }
+                    dataByRede[rede].push(item);
+                });
+
+                // Sort each rede's data
+                Object.keys(dataByRede).forEach(rede => {
+                    dataByRede[rede].sort((a, b) => {
+                        const valueA = a.atingMes !== undefined ? a.atingMes : (a.ating !== undefined ? a.ating : 0);
+                        const valueB = b.atingMes !== undefined ? b.atingMes : (b.ating !== undefined ? b.ating : 0);
+                        return valueB - valueA;
+                    });
+                });
+
+                // Export one panel per rede
+                Object.entries(dataByRede).forEach(([rede, data]) => {
+                    this.createRedePanel(mobilizadorName, rede, data);
+                });
+
+                this.showAlert('success', `${Object.keys(dataByRede).length} painéis exportados (um por rede)!`);
+            }
+
+            createRedePanel(mobilizadorName, rede, data) {
+                const canvas = document.getElementById('exportCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                const width = 750;
+                const rowHeight = 38;
+                const headerHeight = 200;
+                const rows = data.length;
+                const height = headerHeight + (rows * rowHeight) + 80;
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Background
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Header
+                ctx.fillStyle = '#003366';
+                ctx.fillRect(0, 0, width, 140);
+                
+                ctx.fillStyle = '#FFCC00';
+                ctx.fillRect(0, 140, width, 8);
+                
+                // Title
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 38px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(mobilizadorName.toUpperCase(), width / 2, 55);
+                
+                // Subtitle with Rede
+                ctx.font = 'bold 22px Segoe UI';
+                ctx.fillStyle = '#FFCC00';
+                ctx.fillText(`REDE ${rede}`, width / 2, 90);
+                
+                // Date
+                ctx.font = '14px Segoe UI';
+                ctx.fillStyle = '#FFFFFF';
+                const date = new Date().toLocaleDateString('pt-BR');
+                ctx.fillText(`${date} • ${data.length} agências`, width / 2, 120);
+                
+                // Table header
+                const tableY = 165;
+                ctx.fillStyle = '#F0F0F0';
+                ctx.fillRect(15, tableY, width - 30, 35);
+                
+                ctx.fillStyle = '#003366';
+                ctx.font = 'bold 15px Segoe UI';
+                ctx.textAlign = 'left';
+                ctx.fillText('PREFIXO', 25, tableY + 23);
+                ctx.fillText('AGÊNCIA', 110, tableY + 23);
+                
+                if (mobilizadorName === 'Icred 15/90') {
+                    ctx.textAlign = 'right';
+                    ctx.fillText('% ATING', width - 25, tableY + 23);
+                } else {
+                    ctx.textAlign = 'right';
+                    ctx.font = 'bold 13px Segoe UI';
+                    ctx.fillText('ATING', 480, tableY + 23);
+                    ctx.fillText('NEC', 560, tableY + 23);
+                    ctx.fillText('RLZ', 635, tableY + 23);
+                    ctx.fillText('%DIA', width - 25, tableY + 23);
+                }
+                
+                // Table rows
+                let currentY = tableY + 35;
+                
+                data.forEach((item, index) => {
+                    if (index % 2 === 0) {
+                        ctx.fillStyle = '#F8F9FA';
+                        ctx.fillRect(15, currentY, width - 30, rowHeight);
+                    }
+                    
+                    ctx.font = 'bold 14px Segoe UI';
+                    ctx.fillStyle = '#003366';
+                    ctx.textAlign = 'left';
+                    
+                    ctx.fillText(item.prefixo, 25, currentY + 25);
+                    
+                    ctx.font = '13px Segoe UI';
+                    ctx.fillStyle = '#333333';
+                    const truncatedAg = this.truncateText(ctx, item.agencia, 350);
+                    ctx.fillText(truncatedAg, 110, currentY + 25);
+                    
+                    ctx.textAlign = 'right';
+                    
+                    if (mobilizadorName === 'Icred 15/90') {
+                        ctx.font = 'bold 14px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.ating, true);
+                        ctx.fillText(this.formatCompact(item.ating, true), width - 25, currentY + 25);
+                    } else {
+                        ctx.font = 'bold 13px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.atingMes, true);
+                        ctx.fillText(this.formatCompact(item.atingMes, true), 480, currentY + 25);
+                        
+                        ctx.font = '12px Segoe UI';
+                        ctx.fillStyle = '#666666';
+                        ctx.fillText(this.formatCompact(item.necDia), 560, currentY + 25);
+                        ctx.fillText(this.formatCompact(item.rlzDia), 635, currentY + 25);
+                        
+                        ctx.font = 'bold 13px Segoe UI';
+                        ctx.fillStyle = this.getExportColor(item.atingDia, true);
+                        ctx.fillText(this.formatCompact(item.atingDia, true), width - 25, currentY + 25);
+                    }
+                    
+                    currentY += rowHeight;
+                });
+                
+                // Footer
+                ctx.fillStyle = '#003366';
+                ctx.fillRect(0, height - 40, width, 40);
+                
+                ctx.fillStyle = '#FFCC00';
+                ctx.font = 'bold 12px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('Sistema de Rankings - Banco do Brasil', width / 2, height - 15);
+                
+                // Download
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '').slice(0, 15);
+                    a.download = `ranking_${mobilizadorName.replace(/\s+/g, '_')}_Rede_${rede}_${timestamp}.png`;
+                    a.href = url;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+            getExportColor(value, isPercentage) {
+                if (value === undefined || value === null) return '#999999';
+                if (isPercentage) {
+                    if (value >= 100) return '#28A745';
+                    if (value >= 80) return '#FFC107';
+                    return '#DC3545';
+                }
+                return '#666666';
+            }
+
+            formatCompact(value, isPercentage = false) {
+                if (value === undefined || value === null) return '-';
+                
+                if (!isPercentage && value >= 1000) {
+                    const k = (value / 1000).toFixed(1).replace('.', ',');
+                    return k + 'k';
+                }
+                
+                const formatted = value.toFixed(1).replace('.', ',');
+                return isPercentage ? formatted + '%' : formatted;
+            }
+
+            truncateText(ctx, text, maxWidth) {
+                if (!text) return '';
+                if (ctx.measureText(text).width <= maxWidth) {
+                    return text;
+                }
+                
+                let truncated = text;
+                while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+                    truncated = truncated.slice(0, -1);
+                }
+                
+                return truncated + '...';
             }
 
             showAlert(type, message) {
